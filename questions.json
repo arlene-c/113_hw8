@@ -3,23 +3,41 @@
     {
       "question": "Which of the following is a valid variable name in Python?",
       "type": "multiple_choice",
-      "options": ["2var", "my_var", "my var", "my-var"],
-      "hint": "Variable names can include letters, numbers, and underscores—but cannot start with a number.",
+      "options": [
+        "2var",
+        "my_var",
+        "my var",
+        "my-var"
+      ],
+      "hint": "Variable names can include letters, numbers, and underscores\u2014but cannot start with a number.",
       "answer": "my_var",
       "category": "Python Basics"
     },
     {
       "question": "What data type is the result of: print(type(3.0))?",
       "type": "multiple_choice",
-      "options": ["int", "float", "double", "string"],
+      "options": [
+        "int",
+        "float",
+        "double",
+        "string"
+      ],
       "hint": "Numbers with a decimal point are treated differently than whole numbers in Python.",
       "answer": "float",
-      "category": "Python Basics"
+      "category": "Python Basics",
+      "ratings": [
+        4
+      ]
     },
     {
       "question": "What keyword is used to define a function in Python?",
       "type": "multiple_choice",
-      "options": ["func", "define", "def", "function"],
+      "options": [
+        "func",
+        "define",
+        "def",
+        "function"
+      ],
       "hint": "Think about the short keyword Python uses to start a function definition, an abbreviation of the word define.",
       "answer": "def",
       "category": "Python Basics"
@@ -27,16 +45,22 @@
     {
       "question": "A list in Python is immutable.",
       "type": "true_false",
-      "hint": "Think about whether you can change a list after creating it—like adding, removing, or modifying elements.",
+      "hint": "Think about whether you can change a list after creating it\u2014like adding, removing, or modifying elements.",
       "answer": "false",
-      "category": "Data Structures"
+      "category": "Data Structures",
+      "ratings": [
+        2
+      ]
     },
     {
       "question": "What built-in function returns the number of items in a list?",
       "type": "short_answer",
-      "hint": "Think of the short built-in function name that’s an abbreviation for 'length'.",
+      "hint": "Think of the short built-in function name that\u2019s an abbreviation for 'length'.",
       "answer": "len",
-      "category": "Python Basics"
+      "category": "Python Basics",
+      "ratings": [
+        4
+      ]
     }
   ]
 }

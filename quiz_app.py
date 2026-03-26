@@ -135,7 +135,11 @@ def ask_question(q):
                 print("Hint already used for this question.")
             continue
         if options:
-            if ans.upper() not in options:
+            if q['type'] == 'multiple_choice':
+                valid = ans.upper() in options
+            else:
+                valid = ans.lower() in options
+            if not valid:
                 print(f"Invalid input. Options: {', '.join(options)}")
                 continue
         break
