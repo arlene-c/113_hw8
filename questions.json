@@ -13,7 +13,8 @@
       "answer": "my_var",
       "category": "Python Basics",
       "ratings": [
-        1
+        1,
+        5
       ]
     },
     {
@@ -47,7 +48,8 @@
       "answer": "def",
       "category": "Python Basics",
       "ratings": [
-        1
+        1,
+        3
       ]
     },
     {
