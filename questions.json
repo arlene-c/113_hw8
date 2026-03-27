@@ -11,7 +11,10 @@
       ],
       "hint": "Variable names can include letters, numbers, and underscores\u2014but cannot start with a number.",
       "answer": "my_var",
-      "category": "Python Basics"
+      "category": "Python Basics",
+      "ratings": [
+        1
+      ]
     },
     {
       "question": "What data type is the result of: print(type(3.0))?",
@@ -26,7 +29,9 @@
       "answer": "float",
       "category": "Python Basics",
       "ratings": [
-        4
+        4,
+        5,
+        3
       ]
     },
     {
@@ -40,7 +45,10 @@
       ],
       "hint": "Think about the short keyword Python uses to start a function definition, an abbreviation of the word define.",
       "answer": "def",
-      "category": "Python Basics"
+      "category": "Python Basics",
+      "ratings": [
+        1
+      ]
     },
     {
       "question": "A list in Python is immutable.",
@@ -59,7 +67,9 @@
       "answer": "len",
       "category": "Python Basics",
       "ratings": [
-        4
+        4,
+        3,
+        3
       ]
     }
   ]

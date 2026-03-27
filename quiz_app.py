@@ -3,6 +3,7 @@ import random
 import hashlib
 import os
 import sys
+import base64
 from datetime import datetime
 
 def hash_password(pwd):
@@ -12,12 +13,27 @@ def load_questions():
     if not os.path.exists('questions.json'):
         print("Error: questions.json file is missing.")
         sys.exit(1)
-    with open('questions.json', 'r') as f:
-        data = json.load(f)
+    try:
+        with open('questions.json', 'r') as f:
+            data = json.load(f)
+    except json.JSONDecodeError:
+        print("Error: questions.json contains invalid JSON.")
+        sys.exit(1)
+    except (OSError, IOError) as e:
+        print(f"Error reading questions.json: {e}")
+        sys.exit(1)
+
+    if 'questions' not in data or not isinstance(data['questions'], list):
+        print("Error: questions.json is missing 'questions' array or it's invalid.")
+        sys.exit(1)
+
     questions = []
     for q in data['questions']:
+        if not isinstance(q, dict):
+            print("Warning: Skipping malformed question entry that is not an object.")
+            continue
         required_keys = ['question', 'type', 'answer', 'hint', 'category']
-        if q['type'] == 'multiple_choice':
+        if q.get('type') == 'multiple_choice':
             required_keys.append('options')
         if all(k in q for k in required_keys):
             questions.append(q)
@@ -30,23 +46,60 @@ def load_questions():
 
 def load_users():
     if os.path.exists('users.json'):
-        with open('users.json', 'r') as f:
-            return json.load(f)
+        try:
+            with open('users.json', 'r') as f:
+                data = json.load(f)
+            if not isinstance(data, dict):
+                print("Warning: users.json is malformed; resetting user database.")
+                return {}
+            return data
+        except json.JSONDecodeError:
+            print("Warning: users.json contains invalid JSON; resetting user database.")
+            return {}
+        except (OSError, IOError) as e:
+            print(f"Error reading users.json: {e}")
+            return {}
     return {}
 
 def save_users(users):
-    with open('users.json', 'w') as f:
-        json.dump(users, f, indent=2)
+    try:
+        with open('users.json', 'w') as f:
+            json.dump(users, f, indent=2)
+    except (OSError, IOError) as e:
+        print(f"Error saving users.json: {e}")
 
 def load_scores():
     if os.path.exists('scores.json'):
-        with open('scores.json', 'r') as f:
-            return json.load(f)
+        try:
+            with open('scores.json', 'r') as f:
+                raw = f.read().strip()
+            if not raw:
+                return {}
+            # allow both old plain JSON and new base64-encoded content
+            try:
+                decoded = base64.b64decode(raw).decode('utf-8')
+                data = json.loads(decoded)
+            except Exception:
+                data = json.loads(raw)
+            if not isinstance(data, dict):
+                print("Warning: scores.json is malformed; resetting scores database.")
+                return {}
+            return data
+        except json.JSONDecodeError:
+            print("Warning: scores.json contains invalid JSON; resetting scores database.")
+            return {}
+        except (OSError, IOError) as e:
+            print(f"Error reading scores.json: {e}")
+            return {}
     return {}
 
 def save_scores(scores):
-    with open('scores.json', 'w') as f:
-        json.dump(scores, f, indent=2)
+    try:
+        encoded = base64.b64encode(json.dumps(scores).encode('utf-8')).decode('utf-8')
+        with open('scores.json', 'w') as f:
+            f.write(encoded)
+    except (OSError, IOError) as e:
+        print(f"Error saving scores.json: {e}")
 
 def login():
     users = load_users()
@@ -98,8 +151,19 @@ def get_quiz_params():
             print("Invalid selection. Please enter valid numbers.")
     return num, types
 
+def prompt_yes_no(prompt):
+    while True:
+        response = input(prompt).strip().lower()
+        if response in ('y', 'yes'):
+            return True
+        if response in ('n', 'no'):
+            return False
+        print("Invalid input. Please enter 'y' or 'n'.")
+
 def select_questions(questions, num, types):
     filtered = [q for q in questions if q['type'] in types]
+    if not filtered:
+        return []
     if len(filtered) < num:
         print(f"Warning: Only {len(filtered)} questions available of selected types. Selecting all.")
         num = len(filtered)
@@ -184,12 +248,15 @@ def main():
     while True:
         num, types = get_quiz_params()
         selected = select_questions(questions, num, types)
+        if not selected:
+            print("No questions available for selected types. Please choose different types.")
+            continue
         total_score = 0
         correct_count = 0
         questions_done = 0
         for q in selected:
             correct, penalty = ask_question(q)
-            total_score += (1 - penalty) if correct else 0
+            total_score += max(0, 1 - penalty) if correct else 0
             if correct:
                 correct_count += 1
             questions_done += 1
@@ -198,13 +265,20 @@ def main():
                 q['ratings'] = []
             q['ratings'].append(rating)
             if questions_done < num:
-                cont = input("Continue to next question? (y/n): ").strip().lower()
-                if cont != 'y':
+                if not prompt_yes_no("Continue to next question? (y/n): "):
                     print("Exiting early.")
                     break
-        percentage = (correct_count / questions_done) * 100 if questions_done > 0 else 0
+
+        if questions_done == 0:
+            print("No questions were answered. Returning to quiz setup.")
+            continue
+
+        percentage = (correct_count / questions_done) * 100
+        net_percentage = (total_score / questions_done) * 100
+
         print(f"\nQuiz complete! Correct: {correct_count}/{questions_done} ({percentage:.1f}%)")
-        # Save score
+        print(f"Score after hint penalties: {total_score} points, effective {net_percentage:.1f}%")
+
         session = {
             'date': datetime.now().isoformat(),
             'correct': correct_count,
@@ -214,13 +288,20 @@ def main():
         }
         scores[username].append(session)
         save_scores(scores)
-        # Update questions.json with ratings
-        with open('questions.json', 'w') as f:
-            json.dump({'questions': questions}, f, indent=2)
-        cont = input("Do you want to take another quiz? (y/n): ").strip().lower()
-        if cont != 'y':
+
+        try:
+            with open('questions.json', 'w') as f:
+                json.dump({'questions': questions}, f, indent=2)
+        except (OSError, IOError) as e:
+            print(f"Error saving questions.json with ratings: {e}")
+
+        if not prompt_yes_no("Do you want to take another quiz? (y/n): "):
             print("Thanks for playing!")
             break
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print("\nKeyboard interrupt detected. Exiting cleanly.")
+        sys.exit(0)
